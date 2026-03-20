@@ -46,6 +46,8 @@ export default function PDVBalcao() {
   const [selectedCommand, setSelectedCommand] = useState<string | null>(null);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'dinheiro' | 'pix' | 'debito' | 'credito' | null>(null);
+  const [receivedAmount, setReceivedAmount] = useState<string>("");
+  const [cardInfo, setCardInfo] = useState({ nsu: "", auth: "" });
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -159,6 +161,8 @@ export default function PDVBalcao() {
       setCart([]);
       setIsPaymentOpen(false);
       setPaymentMethod(null);
+      setReceivedAmount("");
+      setCardInfo({ nsu: "", auth: "" });
     } catch (e: any) {
       console.error(e);
       toast.error("Erro ao processar venda: " + e.message);
@@ -335,9 +339,17 @@ export default function PDVBalcao() {
           </DialogHeader>
           
           <div className="py-6 space-y-6">
-            <div className="p-4 bg-primary/5 rounded-xl border-2 border-primary/20 flex justify-between items-center">
-              <span className="font-bold text-muted-foreground uppercase text-sm tracking-widest">Valor a Pagar</span>
-              <span className="text-4xl font-black text-primary tracking-tight">R$ {total.toFixed(2)}</span>
+            <div className="p-4 bg-primary/5 rounded-xl border-2 border-primary/20 flex flex-col gap-2">
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-muted-foreground uppercase text-xs tracking-widest">Total a Pagar</span>
+                <span className="text-3xl font-black text-primary tracking-tight">{formatCurrency(total)}</span>
+              </div>
+              {paymentMethod === 'dinheiro' && Number(receivedAmount) > total && (
+                <div className="flex justify-between items-center pt-2 border-t border-primary/10">
+                  <span className="font-bold text-green-600 uppercase text-xs tracking-widest">Troco</span>
+                  <span className="text-2xl font-black text-green-600">{formatCurrency(Number(receivedAmount) - total)}</span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -360,14 +372,60 @@ export default function PDVBalcao() {
             </div>
 
             {paymentMethod === 'dinheiro' && (
-              <div className="space-y-2">
-                <Label>Valor Recebido</Label>
-                <Input type="number" step="0.01" className="h-12 text-lg font-bold" placeholder="0,00" />
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  <Button variant="secondary" size="sm">R$ 20,00</Button>
-                  <Button variant="secondary" size="sm">R$ 50,00</Button>
-                  <Button variant="secondary" size="sm">R$ 100,00</Button>
+              <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="flex justify-between items-end">
+                  <Label className="text-base font-bold">Valor Recebido</Label>
+                  <span className="text-xs text-muted-foreground font-mono">F7 - Atalhos</span>
                 </div>
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  className="h-14 text-2xl font-black text-primary text-right focus-visible:ring-primary" 
+                  placeholder="0,00"
+                  value={receivedAmount}
+                  onChange={(e) => setReceivedAmount(e.target.value)}
+                  autoFocus
+                />
+                <div className="grid grid-cols-3 gap-2">
+                  {[5, 10, 20].map(val => (
+                    <Button 
+                      key={val} 
+                      variant="outline" 
+                      className="h-12 font-bold text-lg hover:bg-primary/10 hover:border-primary/50"
+                      onClick={() => setReceivedAmount(val.toString())}
+                    >
+                      R$ {val},00
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(paymentMethod === 'debito' || paymentMethod === 'credito') && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="font-bold text-xs uppercase text-muted-foreground">NSU (Opcional)</Label>
+                    <Input 
+                      placeholder="Doc/NSU" 
+                      className="h-12 font-mono"
+                      value={cardInfo.nsu}
+                      onChange={e => setCardInfo(prev => ({ ...prev, nsu: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="font-bold text-xs uppercase text-muted-foreground">Aut. (Opcional)</Label>
+                    <Input 
+                      placeholder="Código Aut." 
+                      className="h-12 font-mono"
+                      value={cardInfo.auth}
+                      onChange={e => setCardInfo(prev => ({ ...prev, auth: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1 italic">
+                  * Informações para conciliação bancária futura.
+                </p>
               </div>
             )}
           </div>
