@@ -6,10 +6,11 @@ Este documento serve como guia para a etapa final de entrega do sistema e iníci
 
 ### 1. Infraestrutura
 - [ ] **Vercel**: Criar projeto e importar `https://github.com/denistein2/ERPFoodControl`.
-- [ ] **Variáveis de Ambiente**:
-  - `VITE_SUPABASE_URL`
-  - `VITE_SUPABASE_ANON_KEY`
-  - `RESEND_API_KEY`
+- [ ] **Variáveis de Ambiente (Vercel)**:
+  - Adicionar `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` e `RESEND_API_KEY`.
+- [ ] **Configuração Supabase**:
+  - Ir em `Authentication` -> `URL Configuration`.
+  - Alterar **Site URL** para `https://erp-food-control.vercel.app/`.
 - [ ] **DNS Hostinger**: Apontar CNAME de `ERPFoodControl.steintechnology.com.br` para o endereço do Vercel.
 
 ### 2. Banco de Dados (Supabase)
