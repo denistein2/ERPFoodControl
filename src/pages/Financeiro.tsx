@@ -45,6 +45,56 @@ function calcResumo(titulos: { dataVencimento: string; valorSaldo: string; statu
   return { totalAberto, totalVencido, totalVencer30 };
 }
 
+function TitulosTab({ titulos, entityLabel }: { titulos: { id: number; numero: string; dataVencimento: string; valorOriginal: string; valorSaldo: string; status: string; [k: string]: any }[]; entityLabel: string }) {
+  const resumo = calcResumo(titulos);
+  const hoje = new Date();
+  const sorted = [...titulos].sort((a, b) => new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime());
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total em Aberto</CardTitle></CardHeader>
+          <CardContent><div className="flex items-center gap-2"><TrendingUp className="w-5 h-5 text-primary" /><span className="text-xl font-bold">{formatCurrency(resumo.totalAberto)}</span></div></CardContent>
+        </Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Vencido</CardTitle></CardHeader>
+          <CardContent><div className="flex items-center gap-2"><AlertTriangle className="w-5 h-5 text-destructive" /><span className="text-xl font-bold text-destructive">{formatCurrency(resumo.totalVencido)}</span></div></CardContent>
+        </Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">A Vencer (30 dias)</CardTitle></CardHeader>
+          <CardContent><div className="flex items-center gap-2"><Clock className="w-5 h-5 text-warning" /><span className="text-xl font-bold">{formatCurrency(resumo.totalVencer30)}</span></div></CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nº Título</TableHead><TableHead>{entityLabel}</TableHead><TableHead>Vencimento</TableHead>
+                <TableHead className="text-right">Valor Original</TableHead><TableHead className="text-right">Saldo</TableHead><TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sorted.map(t => {
+                const vencido = (t.status === 'aberto' || t.status === 'parcial') && new Date(t.dataVencimento) < hoje;
+                return (
+                  <TableRow key={t.id} className={vencido ? 'bg-destructive/5' : ''}>
+                    <TableCell className="font-mono">{t.numero}</TableCell>
+                    <TableCell>{t.cliente || t.fornecedor}</TableCell>
+                    <TableCell className={vencido ? 'text-destructive font-medium' : ''}>{formatDate(t.dataVencimento)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(t.valorOriginal)}</TableCell>
+                    <TableCell className="text-right font-medium">{formatCurrency(t.valorSaldo)}</TableCell>
+                    <TableCell><Badge className={statusColors[t.status] || ''}>{t.status}</Badge></TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function FluxoDeCaixaTab() {
   const [activeSession, setActiveSession] = useState<any>(null);
   const [movements, setMovements] = useState<any[]>([]);
