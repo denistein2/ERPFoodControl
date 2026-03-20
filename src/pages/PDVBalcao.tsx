@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,16 +51,16 @@ export default function PDVBalcao() {
     if (!isSupabaseConfigured) return;
     const fetchProducts = async () => {
       const { data, error } = await supabase
-        .from("produtos")
+        .from("products")
         .select("*")
         .eq("ativo", true);
       if (!error && data) setProductList(data.map(row => ({
         id: row.id,
-        nome: row.nome,
+        nome: row.name,
         sku: row.sku,
         categoriaId: row.categoria_id,
         unidade: row.unidade,
-        estoqueMinimo: row.estoque_minimo,
+        estoqueMinimo: row.min_stock,
         costPrice: row.cost_price,
         sellPrice: row.sell_price,
         isQuickAccess: row.is_quick_access,
@@ -99,11 +100,69 @@ export default function PDVBalcao() {
       return;
     }
     
-    // Logic for database saving would go here
-    toast.success("Venda realizada com sucesso!");
-    setCart([]);
-    setIsPaymentOpen(false);
-    setPaymentMethod(null);
+    if (!isSupabaseConfigured) {
+      toast.success("Venda realizada com sucesso! (Modo Mock)");
+      setCart([]);
+      setIsPaymentOpen(false);
+      return;
+    }
+
+    try {
+      // 1. Criar a Comanda
+      const { data: command, error: cmdError } = await supabase
+        .from("commands")
+        .insert([{ status: 'Fechada', total_amount: total }])
+        .select()
+        .single();
+
+      if (cmdError) throw cmdError;
+
+      // 2. Criar os Itens da Comanda
+      const itemsPayload = cart.map(item => ({
+        command_id: command.id,
+        product_id: item.id,
+        quantity: item.quantity,
+        unit_price: item.price
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("command_items")
+        .insert(itemsPayload);
+
+      if (itemsError) throw itemsError;
+
+      // 3. Criar a Transação Financeira
+      // Precisamos do ID do método de pagamento (lookup ou fixo)
+      // O script sementeia Dinheiro, PIX, Débito, Crédito.
+      const { data: pm } = await supabase.from("payment_methods").select("id").ilike("name", paymentMethod).single();
+
+      const { data: tx, error: txError } = await supabase
+        .from("financial_transactions")
+        .insert([{
+          transaction_type: 'IN',
+          amount: total,
+          due_date: new Date().toISOString().split('T')[0],
+          status: 'Pago',
+          description: `Venda PDV - Comanda ${command.id.slice(0,8)}`,
+          command_id: command.id,
+          payment_method_id: pm?.id
+        }])
+        .select()
+        .single();
+
+      if (txError) throw txError;
+
+      // 4. Vincular Transação à Comanda
+      await supabase.from("commands").update({ transaction_id: tx.id }).eq("id", command.id);
+
+      toast.success("Venda finalizada e estoque atualizado!");
+      setCart([]);
+      setIsPaymentOpen(false);
+      setPaymentMethod(null);
+    } catch (e: any) {
+      console.error(e);
+      toast.error("Erro ao processar venda: " + e.message);
+    }
   };
 
   return (

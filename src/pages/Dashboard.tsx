@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Package, 
@@ -62,7 +63,7 @@ export default function Dashboard() {
       const saldo = salesData?.reduce((acc, curr) => acc + curr.amount, 0) || 0;
       
       const { count: criticoCount } = await supabase
-        .from("produtos")
+        .from("products")
         .select("id", { count: 'exact' })
         .lte("current_stock", "min_stock");
 

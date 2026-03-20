@@ -18,11 +18,11 @@ import { useProfile } from "@/hooks/useProfile";
 function fromSupabaseRow(row: Record<string, unknown>): Produto {
   return {
     id: row.id as string,
-    nome: row.nome as string,
+    nome: (row.name ?? row.nome) as string,
     sku: row.sku as string,
     categoriaId: (row.categoria_id ?? row.categoriaId) as string,
     unidade: row.unidade as Unidade,
-    estoqueMinimo: Number(row.estoque_minimo ?? row.estoqueMinimo ?? 0),
+    estoqueMinimo: Number(row.min_stock ?? row.estoqueMinimo ?? 0),
     costPrice: Number(row.cost_price ?? row.costPrice ?? 0),
     sellPrice: Number(row.sell_price ?? row.sellPrice ?? 0),
     isQuickAccess: Boolean(row.is_quick_access ?? row.isQuickAccess ?? false),
@@ -34,11 +34,11 @@ function fromSupabaseRow(row: Record<string, unknown>): Produto {
 /** Converte payload do app (camelCase) para objeto Supabase (snake_case). */
 function toSupabaseRow(payload: Omit<Produto, "id"> & { id?: string }) {
   return {
-    nome: String(payload.nome ?? "").trim(),
+    name: String(payload.nome ?? ""),
     sku: String(payload.sku ?? "").trim(),
     categoria_id: String(payload.categoriaId ?? ""),
     unidade: String(payload.unidade ?? "un"),
-    estoque_minimo: Number(payload.estoqueMinimo) || 0,
+    min_stock: Number(payload.estoqueMinimo) || 0,
     cost_price: Number(payload.costPrice) || 0,
     sell_price: Number(payload.sellPrice) || 0,
     is_quick_access: Boolean(payload.isQuickAccess),
@@ -59,15 +59,15 @@ export default function Products() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    const fetchProducts = async () => {
+    const fetchItems = async () => {
       const { data, error } = await supabase
-        .from("produtos")
+        .from("products")
         .select("*")
-        .order("nome", { ascending: true });
+        .order("name", { ascending: true });
       if (!error && data) setProductList(data.map(fromSupabaseRow));
       setLoading(false);
     };
-    fetchProducts();
+    fetchItems();
   }, []);
 
   const filtered = productList.filter(p =>
@@ -83,7 +83,7 @@ export default function Products() {
       const row = toSupabaseRow(payload);
       if (editProduct) {
         const { error } = await supabase
-          .from("produtos")
+          .from("products")
           .update(row)
           .eq("id", editProduct.id);
         if (error) {
@@ -96,7 +96,7 @@ export default function Products() {
         toast.success("Produto atualizado.");
       } else {
         const { data, error } = await supabase
-          .from("produtos")
+          .from("products")
           .insert([row])
           .select();
         if (error) {
