@@ -48,6 +48,9 @@ export default function PDVBalcao() {
   const [paymentMethod, setPaymentMethod] = useState<'dinheiro' | 'pix' | 'debito' | 'credito' | null>(null);
   const [receivedAmount, setReceivedAmount] = useState<string>("");
   const [cardInfo, setCardInfo] = useState({ nsu: "", auth: "" });
+  const [activeSession, setActiveSession] = useState<any>(null);
+  const [isOpeningCashier, setIsOpeningCashier] = useState(false);
+  const [openingBalance, setOpeningBalance] = useState("0");
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -70,8 +73,39 @@ export default function PDVBalcao() {
         ativo: row.ativo,
       })));
     };
+    const fetchActiveSession = async () => {
+      const { data } = await supabase
+        .from("cashier_sessions")
+        .select("*")
+        .eq("status", "Aberto")
+        .maybeSingle();
+      setActiveSession(data);
+    };
+
     fetchProducts();
+    fetchActiveSession();
   }, []);
+
+  const handleOpenCashier = async () => {
+    if (!isSupabaseConfigured) {
+      setActiveSession({ id: 'mock', status: 'Aberto', opening_balance: Number(openingBalance) });
+      setIsOpeningCashier(false);
+      return;
+    }
+    const { data, error } = await supabase
+      .from("cashier_sessions")
+      .insert([{ opening_balance: Number(openingBalance), status: 'Aberto' }])
+      .select()
+      .single();
+    
+    if (error) {
+      toast.error("Erro ao abrir caixa: " + error.message);
+    } else {
+      setActiveSession(data);
+      setIsOpeningCashier(false);
+      toast.success("Caixa aberto com sucesso!");
+    }
+  };
 
   const quickProducts = productList.filter(p => p.isQuickAccess);
   const filteredProducts = productList.filter(p => 
@@ -147,7 +181,8 @@ export default function PDVBalcao() {
           status: 'Pago',
           description: `Venda PDV - Comanda ${command.id.slice(0,8)}`,
           command_id: command.id,
-          payment_method_id: pm?.id
+          payment_method_id: pm?.id,
+          cashier_session_id: activeSession?.id
         }])
         .select()
         .single();
@@ -327,6 +362,39 @@ export default function PDVBalcao() {
           </div>
         </Card>
       </div>
+
+      {/* Overlay de Caixa Fechado */}
+      {!activeSession && (
+        <div className="absolute inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-6">
+          <Card className="max-w-md w-full shadow-2xl border-2">
+            <CardHeader className="text-center">
+              <div className="mx-auto bg-primary/10 p-4 rounded-full w-20 h-20 flex items-center justify-center mb-4">
+                <Banknote className="h-10 w-10 text-primary" />
+              </div>
+              <CardTitle className="text-2xl font-black">Caixa Fechado</CardTitle>
+              <p className="text-muted-foreground mt-2">Para iniciar as vendas, você precisa realizar a abertura do caixa.</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Saldo Inicial (Fundo de Troco)</Label>
+                <Input 
+                  type="number" 
+                  className="h-12 text-lg font-bold" 
+                  placeholder="R$ 0,00" 
+                  value={openingBalance}
+                  onChange={e => setOpeningBalance(e.target.value)}
+                />
+              </div>
+              <Button 
+                className="w-full h-12 text-lg font-bold" 
+                onClick={handleOpenCashier}
+              >
+                Abrir Caixa agora
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Modal de Pagamento */}
       <Dialog open={isPaymentOpen} onOpenChange={setIsPaymentOpen}>
