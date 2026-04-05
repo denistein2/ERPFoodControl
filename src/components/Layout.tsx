@@ -25,7 +25,7 @@ export function Layout() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="h-screen flex w-full overflow-hidden">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           <header className="h-12 flex items-center justify-between border-b bg-card px-4 shrink-0">
@@ -49,7 +49,7 @@ export function Layout() {
               </Button>
             )}
           </header>
-          <main className="flex-1 overflow-auto p-6 bg-background">
+          <main className="flex-1 flex flex-col min-h-0 overflow-hidden p-4 bg-background">
             <Outlet />
           </main>
         </div>

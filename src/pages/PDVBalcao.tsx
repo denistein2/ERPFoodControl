@@ -375,7 +375,7 @@ export default function PDVBalcao() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-100px)] gap-2 overflow-hidden">
+    <div className="flex flex-col h-full min-h-0 gap-2 overflow-hidden w-full">
       {/* Barra de Status do Caixa (Novo) */}
       {activeSession && (
         <div className="bg-card border-2 border-primary/20 rounded-xl p-3 flex items-center justify-between shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
@@ -420,9 +420,10 @@ export default function PDVBalcao() {
         </div>
       )}
 
-      <div className="flex flex-1 gap-6 overflow-hidden min-h-0">
+      {/* Main Grid: Left Products vs Right Cart */}
+      <div className="flex flex-1 gap-6 min-h-0 h-[calc(100vh-175px)]">
         {/* Esquerda: Grade de Produtos */}
-        <div className="flex-1 flex flex-col gap-4">
+        <div className="flex-1 flex flex-col gap-4 overflow-hidden">
           <div className="flex items-center gap-2">
             <div className="flex-1 flex gap-2">
               <div className="w-20 shrink-0">
@@ -500,9 +501,9 @@ export default function PDVBalcao() {
       </div>
 
         {/* Direita: Carrinho e Comandas com Abas */}
-        <div className="w-[380px] flex flex-col h-full min-h-0 overflow-hidden">
-          <Tabs defaultValue="venda" className="flex-1 flex flex-col min-h-0 overflow-hidden">
-            <TabsList className="grid w-full grid-cols-3 mb-1 shrink-0">
+        <div className="w-[400px] flex flex-col h-full rounded-xl border-x border-b shadow-sm overflow-hidden bg-background shrink-0">
+          <Tabs defaultValue="venda" className="flex-1 flex flex-col h-full min-h-0">
+            <TabsList className="grid w-full grid-cols-3 mb-0 shrink-0 border-b rounded-none h-12">
               <TabsTrigger value="venda" className="gap-1 text-[11px] uppercase font-bold">
                 <ShoppingCart className="h-3 w-3" /> Venda
               </TabsTrigger>
@@ -514,19 +515,22 @@ export default function PDVBalcao() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="venda" className="flex-1 flex flex-col min-h-0 mt-0 overflow-hidden bg-background rounded-b-xl border-x border-b">
-              {/* Carrinho Expandido */}
-              <Card className="flex-1 flex flex-col min-h-0 bg-primary/5 border-primary/20 shadow-sm overflow-hidden rounded-xl border-none shadow-none">
-                <CardHeader className="py-2 px-4 border-b border-primary/10 shrink-0 bg-primary/10">
+            <TabsContent 
+              value="venda" 
+              className="mt-0 bg-white overflow-hidden"
+              style={{ height: activeSession ? 'calc(100vh - 215px)' : 'calc(100vh - 155px)' }}
+            >
+              <div className="flex flex-col h-full">
+                <div className="py-2 px-4 border-b border-primary/10 shrink-0 bg-primary/5">
                   <CardTitle className="flex items-center gap-2 text-[11px] uppercase font-black text-primary tracking-widest">
                     <ShoppingCart className="h-3.5 w-3.5" />
                     Itens do Pedido
                   </CardTitle>
-                </CardHeader>
+                </div>
                 <CardContent className="flex-1 min-h-0 p-0 overflow-hidden bg-white">
                   <ScrollArea className="h-full">
                     {cart.length === 0 ? (
-                      <div className="h-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground opacity-50 py-32">
+                      <div className="h-full flex flex-col items-center justify-center p-8 text-center text-muted-foreground opacity-50 py-20">
                         <ShoppingCart className="h-16 w-16 mb-4" />
                         <p className="font-bold">Aguardando Produtos...</p>
                       </div>
@@ -585,7 +589,7 @@ export default function PDVBalcao() {
                     </Button>
                   </div>
                 </div>
-              </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="comandas" className="flex-1 flex flex-col min-h-0 mt-0">
